@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+    <head><title>roguelike engine test</title></head>
+    <body>
+        <script type="module">
+        import { RL, RLFont } from '../rl.js';
+        let rl = new RL({ rows: 30, cols: 30, scale: 2 });
+        document.body.appendChild(rl.canvas);
+        rl.start_loop();
+        window.rl = rl;
+        window.RLFont = RLFont;
+        </script>
+    </body>
+</html>
