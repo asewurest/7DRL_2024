@@ -4,11 +4,13 @@
     <body>
         <script type="module">
         import { RL, RLFont } from '../rl.js';
-        let rl = new RL({ rows: 30, cols: 30, scale: 2 });
+        let rl = new RL({ rows: 30, cols: 60, scale: 2 });
+        rl.logger(0, 25, 60, 5, true);
         document.body.appendChild(rl.canvas);
         rl.start_loop();
         window.rl = rl;
         window.RLFont = RLFont;
+        rl.log('rl v0.0.1');
         </script>
     </body>
 </html>

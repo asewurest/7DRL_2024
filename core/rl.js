@@ -42,6 +42,46 @@ export class RL {
     }
     
     this.ctx.imageSmoothingEnabled = false;
+    
+    this.loggers = [];
+  }
+  
+  log(message, color) {
+    if (this.default_logger) {
+      this.default_logger.log(message, color);
+    }
+  }
+  
+  logger(x, y, w, h, is_default = false) {
+    let logger = {
+      x,
+      y,
+      w,
+      h,
+      lines: [],
+      clear: () => logger.lines = [],
+      log: (message, color = 0xFF_FF_FF) => {
+        message = message.slice(0, w);
+        if (logger.lines.length > 0 && logger.lines[logger.lines.length - 1][0] == message && logger.lines[logger.lines.length - 1][1] == color) {
+          logger.lines[logger.lines.length - 1][3]++;
+          logger.lines[logger.lines.length - 1][2] = `(${logger.lines[logger.lines.length - 1][3]}) `;
+        } else {
+          logger.lines.push([message, color, '', 1]);
+          if (logger.lines.length > h) logger.lines.shift();
+        }
+      },
+      remove: () => {
+        if (this.loggers.includes(logger)) {
+          this.loggers.splice(this.loggers.indexOf(logger), 1);
+        }
+      }
+    };
+    
+    this.loggers.push(logger);
+    if (is_default) {
+      this.default_logger = logger;
+    }
+    return logger;
   }
   
   start_loop() {
@@ -73,7 +113,19 @@ export class RL {
       this.font.draw_char(ctx, 'A', 10 * (i % this.rows), 10 * Math.floor(i / this.rows), (i % 10) * 5329099);
     }
     
+    ctx.fillStyle = canvas_color(this.background);
+    this.loggers.forEach(logger => {
+      ctx.fillRect(logger.x * 10, logger.y * 10, logger.w * 10, logger.h * 10);
+      for (let i = 0; i < logger.lines.length; i++) {
+        let [message, color, repeat] = logger.lines[i];
+        this.font.draw_text(ctx, (repeat + message).slice(0, logger.w), logger.x * 10, (logger.y + i) * 10, color);
+      }
+    });
+    
     ctx.fillStyle = 'white';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.scale(10,10);
     ctx.fillText(delta.toString(), 0, 0);
     
     ctx.setTransform(old_matrix);
@@ -94,7 +146,7 @@ export class RLFont {
     ctx.fillRect(0, 0, 90, 90);
     let x = 0;
     let y = 0;
-    let chars = ' qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890@';
+    let chars = ' qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890@!().,';
     let characters = {};
     ctx.fillStyle = 'white';
     ctx.font = '9px monospace';
@@ -163,6 +215,37 @@ export class RLFont {
       this.images[color].src = canvas.toDataURL();
     }
     ctx.drawImage(this.images[color], this.characters[c].x, this.characters[c].y, this.char_w, this.char_h, x, y, this.char_w, this.char_h);
+  }
+  
+  draw_text(ctx, text, x, y, color = 0xFF_FF_FF) {
+    if (!this.images[color]) {
+      let ctx = RLFont['_multipurpose_context'];
+      let canvas = ctx.canvas;
+      canvas.width  = this.image.width;
+      canvas.height = this.image.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(this.image, 0, 0);
+      let data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < data.data.length; i += 4) {
+        if (data.data[i + 2] >= 128) {
+          data.data[i + 0] = (color & 0xFF_00_00) >> 16;
+          data.data[i + 1] = (color & 0xFF_00) >> 8;
+          data.data[i + 2] = color & 0xFF;
+          data.data[i + 3] = 255;
+        } else {
+          data.data[i + 0] = 0;
+          data.data[i + 1] = 0;
+          data.data[i + 2] = 0;
+          data.data[i + 3] = 0;
+        }
+      }
+      ctx.putImageData(data, 0, 0);
+      this.images[color] = new Image();
+      this.images[color].src = canvas.toDataURL();
+    }
+    for (let i = 0; i < text.length; i++) {
+      ctx.drawImage(this.images[color], this.characters[text[i]].x, this.characters[text[i]].y, this.char_w, this.char_h, x + i * this.char_w, y, this.char_w, this.char_h);
+    }
   }
 }
 
