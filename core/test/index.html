@@ -4,13 +4,24 @@
     <body>
         <script type="module">
         import { RL, RLFont } from '../rl.js';
-        let rl = new RL({ rows: 30, cols: 60, scale: 2 });
+        let image = new Image();
+        image.src = '../font.png';
+        let char_data = {};
+        let chars = ' 0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!()';
+        for (let i = 0; i < chars.length; i++) {
+          char_data[chars[i]] = { x: 10 * (i % 16), y: 10 * Math.floor(i / 16) };
+        }
+        let font = new RLFont(10, 10, image, char_data);
+        let rl = new RL({ rows: 30, cols: 60, scale: 2, font });
         rl.logger(0, 25, 60, 5, true);
         document.body.appendChild(rl.canvas);
         rl.start_loop();
         window.rl = rl;
         window.RLFont = RLFont;
+        window.font = font;
         rl.log('rl v0.0.1');
+        rl.log(chars, 0xFF);
+        rl.log('(!) You hear a trap activating', 0xFF_88_00)
         </script>
     </body>
 </html>
