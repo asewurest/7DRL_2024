@@ -44,12 +44,57 @@ export class RL {
     this.ctx.imageSmoothingEnabled = false;
     
     this.loggers = [];
+    this.action_panels = [];
+    
+    this.pressed = {};
+    this.pressed_now = {};
+    
+    addEventListener('keydown', e => {
+      this.pressed[e.key] = true;
+      this.pressed_now[e.key] = true;
+    });
+    
+    addEventListener('keyup', e => {
+      this.pressed[e.key] = false;
+    });
   }
   
   log(message, color) {
     if (this.default_logger) {
       this.default_logger.log(message, color);
     }
+  }
+  
+  action_panel(x, y, w, h) {
+    let action_panel = {
+      x,
+      y,
+      w,
+      h,
+      actions: {},
+      order: [],
+      remove: () => {
+        if (this.action_panels.includes(action_panel)) {
+          this.action_panels.splice(this.action_panels.indexOf(action_panel), 1);
+        }
+      },
+      add_action: (name, label, key, action) => {
+        action_panel.actions[name] = {
+          label,
+          key,
+          action,
+        };
+        action_panel.order.push(name);
+      },
+      remove_action: name => {
+        if (action_panel.order.includes(name)) {
+          action_panel.order.splice(action_panel.order.indexOf(name), 1);
+        }
+        delete action_panel.actions[name];
+      }
+    };
+    this.action_panels.push(action_panel);
+    return action_panel;
   }
   
   logger(x, y, w, h, is_default = false) {
@@ -122,13 +167,36 @@ export class RL {
       }
     });
     
-    ctx.fillStyle = 'white';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.scale(10,10);
-    ctx.fillText(delta.toString(), 0, 0);
+    this.action_panels.forEach(action_panel => {
+      ctx.fillRect(action_panel.x * 10, action_panel.y * 10, action_panel.w * 10, action_panel.h * 10);
+      let i = -1;
+      for (let v of action_panel.order) {
+        let { label, key, action } = action_panel.actions[v];
+        if (key.toLowerCase() == label[0].toLowerCase()) {
+          this.font.draw_text(ctx, `${key}`, action_panel.x * 10, (action_panel.y + ++i) * 10, 0x00_FF_00);
+          this.font.draw_text(ctx, `${label.slice(1, action_panel.w)}`, (action_panel.x + 1) * 10, (action_panel.y + i) * 10, 0xCC_CC_CC);
+        } else {
+          this.font.draw_text(ctx, `${key}`, action_panel.x * 10, (action_panel.y + ++i) * 10, 0x00_FF_00);
+          this.font.draw_text(ctx, `${label.slice(0, action_panel.w - 1)}`, (action_panel.x + 2) * 10, (action_panel.y + i) * 10, 0xCC_CC_CC);
+        }
+        if (this.pressed_now[key]) {
+          action();
+        }
+      }
+      // for (let i = 0; i < logger.lines.length; i++) {
+      //   let [message, color, repeat] = logger.lines[i];
+      //   this.font.draw_text(ctx, (repeat + message).slice(0, logger.w), logger.x * 10, (logger.y + i) * 10, color);
+      // }
+    });
+    
+    // ctx.fillStyle = 'white';
+    // ctx.textAlign = 'left';
+    // ctx.textBaseline = 'top';
+    // ctx.scale(10,10);
+    // ctx.fillText(delta.toString(), 0, 0);
     
     ctx.setTransform(old_matrix);
+    this.pressed_now = {};
     this.loop = requestAnimationFrame(() => this.update());
   }
 }
