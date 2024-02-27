@@ -63,8 +63,36 @@ export class RL {
       this.pressed[e.key] = false;
     });
     
+    this.entities = [];
     this.materials = {};
     this.material_id = 0;
+    
+    this.listeners = {};
+  }
+
+  on(event, handler, options) {
+      this.listeners[event] = this.listeners[event] || [];
+      this.listeners[event].push([handler, (options && (options.once == true)) ? 1 : Infinity]);
+  }
+  
+  off(event, handler, options) {
+      if (this.listeners[event]) {
+          let once = options && (options.once == true);
+          let element = this.listeners[event].find(x => x[0] == handler && isFinite(x[1]) == once);
+          if (element) {
+              this.listeners[event].splice(this.listeners.indexOf(element), 1);
+          }
+      }
+  }
+  
+  trigger(event, value) {
+      if (this.listeners[event]) {
+          for (let listener of this.listeners[event]) {
+              listener[0](value);
+              listener[1]--;
+          }
+          this.listeners[event] = this.listeners[event].filter(x => x[1] <= 0);
+      }
   }
   
   material(name, spec) {
@@ -210,6 +238,17 @@ export class RL {
     this.then   = now;
     const ctx   = this.ctx;
     const old_matrix = ctx.getTransform();
+    if (this.entity_moves) {
+        if (this.entity_moves.resolved) {
+            let moves = this.entity_moves.output;
+            // <tick-end-stuff like="moving entities, checking which ones would die">
+            // <frame-end-stuff/>
+            this.trigger('tick_end', undefined);
+            this.entity_moves = pollable(Promise.all(this.entities.map(x => x.get_next_moves())));
+        }
+    } else {
+        this.entity_moves = pollable(Promise.all(this.entities.map(x => x.get_next_moves())));
+    }
     
     ctx.fillStyle = canvas_color(this.background);
     ctx.fillRect(0, 0, this.pixel_width, this.pixel_height);
@@ -261,6 +300,17 @@ export class RL {
     this.pressed_now = {};
     this.loop = requestAnimationFrame(() => this.update());
   }
+}
+
+function pollable(x) {
+    if (!x.pollable) {
+        x.pollable = true;
+        x.then(v => {
+            x.resolved = true;
+            x.output = v;
+        });
+    }
+    return x;
 }
 
 export class RLFont {

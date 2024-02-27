@@ -26,6 +26,7 @@
           rl.log('╔═╗┌─┐');
           rl.log('║A║│B│');
           rl.log('╚═╝└─┘');
+          rl.on('tick_end', console.warn);
           
           let panel = rl.action_panel(0, 0, 10, 25);
           window.panel = panel;
