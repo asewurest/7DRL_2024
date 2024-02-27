@@ -8,7 +8,7 @@
         image.src = '../font.png';
         image.onload = () => {
           let char_data = {};
-          let chars = ' 0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!(),:/┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥▒';
+          let chars = ' 0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!(),:/┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥▒@↑↓←→';
           for (let i = 0; i < chars.length; i++) {
             char_data[chars[i]] = { x: 10 * (i % 16), y: 10 * Math.floor(i / 16) };
           }
@@ -16,6 +16,13 @@
           let rl = new RL({ rows: 30, cols: 60, scale: 2, font });
           rl.logger(0, 25, 60, 5, true);
           document.body.appendChild(rl.canvas);
+          let player = {
+              'character': '@',
+              'color': 0xFF_FF_00,
+              'get_next_moves': () => Promise.resolve(),
+              x: 0,
+              y: 0,
+          };
           rl.on('load_level', () => {
               let wall = rl.material('wall', {
                   shaping : 'wall',
@@ -30,6 +37,7 @@
                   foreground: Array(100).fill(0).map((_, i) => Array(100).fill(0).map((_, j) => (i == 0 || j == 0 || i == 99 || j == 99) ? wall : (Math.random() > 0.5 ? wall : null))),
                   w: 100,
                   h: 100,
+                  entities: [player],
               }
           });
           rl.start_loop();
@@ -57,10 +65,12 @@
           panel.add_action('left', 'gauche', 'a', () => vp.target_x--);
           panel.add_action('down', 'bas', 's', () => vp.target_y++);
           panel.add_action('right', 'droite', 'd', () => vp.target_x++);
-          panel.add_action('2up', 'Haut', 'i', () => vp2.target_y--);
-          panel.add_action('2left', 'Gauche', 'j', () => vp2.target_x--);
-          panel.add_action('2down', 'Bas', 'k', () => vp2.target_y++);
-          panel.add_action('2right', 'Droite', 'l', () => vp2.target_x++);
+          vp2.track = player;
+          window.player = player;
+          panel.add_action('2up', 'Haut', 'ArrowUp', () => vp2.target_y--);
+          panel.add_action('2left', 'Gauche', 'ArrowLeft', () => vp2.target_x--);
+          panel.add_action('2down', 'Bas', 'ArrowDown', () => vp2.target_y++);
+          panel.add_action('2right', 'Droite', 'ArrowRight', () => vp2.target_x++);
         }
         </script>
     </body>

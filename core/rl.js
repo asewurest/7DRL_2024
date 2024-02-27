@@ -2,6 +2,25 @@ function canvas_color(c) {
     return '#' + c.toString(16).padEnd(6, '0');
 }
 
+function map_key(k) {
+    switch (k) {
+        case 'ArrowLeft':
+        case 'arrowleft':
+        return '←';
+        case 'ArrowRight':
+        case 'arrowright':
+        return '→';
+        case 'ArrowUp':
+        case 'arrowup':
+        return '↑';
+        case 'ArrowDown':
+        case 'arrowdown':
+        return '↓';
+        default:
+        return k;
+    }
+}
+
 export class RL {
     constructor(options) {
         let {
@@ -297,7 +316,6 @@ export class RL {
                         let right  = array[i][j].spec.shaping.compatible.includes(tile(i + 1, j)) ? 1 : 0;
                         let bottom = array[i][j].spec.shaping.compatible.includes(tile(i, j + 1)) ? 1 : 0;
                         let key = bottom | (right << 1) | (left << 2) | (top << 3);
-                        console.log(key);
                         array[i][j].character = array[i][j].spec.shaping[key] || array[i][j].spec.shaping['default'];
                     }
                 }
@@ -356,6 +374,10 @@ export class RL {
         ctx.fillStyle = canvas_color(this.background);
         this.viewports.forEach(viewport => {
             let level = this.levels[viewport.current_level];
+            if (level.entities.includes(viewport.track)) {
+                viewport.target_x = viewport.track.x;
+                viewport.target_y = viewport.track.y;
+            }
             ctx.fillRect(viewport.x * 10, viewport.y * 10, viewport.w * 10, viewport.h * 10);
             let off_x  = Math.floor(viewport.w / 2);
             let off_y  = Math.floor(viewport.h / 2);
@@ -417,7 +439,7 @@ export class RL {
                     this.font.draw_text(ctx, `${key}`, action_panel.x * 10, (action_panel.y + ++i) * 10, 0x00_FF_00);
                     this.font.draw_text(ctx, `${label.slice(1, action_panel.w)}`, (action_panel.x + 1) * 10, (action_panel.y + i) * 10, 0xCC_CC_CC);
                 } else {
-                    this.font.draw_text(ctx, `${key}`, action_panel.x * 10, (action_panel.y + ++i) * 10, 0x00_FF_00);
+                    this.font.draw_text(ctx, `${map_key(key)}`, action_panel.x * 10, (action_panel.y + ++i) * 10, 0x00_FF_00);
                     this.font.draw_text(ctx, `${label.slice(0, action_panel.w - 1)}`, (action_panel.x + 2) * 10, (action_panel.y + i) * 10, 0xCC_CC_CC);
                 }
                 if (this.pressed_now[key]) {
