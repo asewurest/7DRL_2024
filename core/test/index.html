@@ -8,7 +8,7 @@
         image.src = '../font.png';
         image.onload = () => {
           let char_data = {};
-          let chars = ' 0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!(),:/┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩';
+          let chars = ' 0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!(),:/┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥';
           for (let i = 0; i < chars.length; i++) {
             char_data[chars[i]] = { x: 10 * (i % 16), y: 10 * Math.floor(i / 16) };
           }

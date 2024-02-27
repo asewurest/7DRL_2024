@@ -4,12 +4,15 @@ function canvas_color(c) {
 
 export class RL {
   constructor(options) {
-    let { rows, cols, font, c, background, scale } = (options || {});
+    let { rows, cols, font, c, background, scale, unload_hidden } = (options || {});
     font       = font       || RLFont.default_font();
     rows       = rows       || 25;
     cols       = cols       || 80;
     scale      = scale      || 1;
     background = background || 0x000000;
+    if (typeof unload_hidden === 'undefined') {
+      unload_hidden = true;
+    }
     /** @type {number} */
     this.rows = rows;
     /** @type {number} */
@@ -28,6 +31,8 @@ export class RL {
     this.pixel_width = scale * cols * font.char_w;
     /** @type {number} */
     this.pixel_height = scale * rows * font.char_h;
+    /** @type {boolean} */
+    this.unload_hidden = unload_hidden;
     if (c instanceof CanvasRenderingContext2D) {
       this.canvas = c.canvas;
       this.ctx    = c;
@@ -57,6 +62,63 @@ export class RL {
     addEventListener('keyup', e => {
       this.pressed[e.key] = false;
     });
+    
+    this.materials = {};
+    this.material_id = 0;
+  }
+  
+  material(name, spec) {
+    spec.material_id = this.material_id++;
+    spec.character = spec.character || '#';
+    spec.tangible  = (typeof spec.tangible === 'undefined') ? true : spec.tangible;
+    spec.shaping   = spec.shaping || false;
+    spec.color     = spec.color || 0xAA_AA_AA;
+    if (spec.shaping == 'wall_light') {
+      // ┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥
+      spec.shaping = {
+        'default': '─',
+        0b1111: '┼',
+        0b1001: '│',
+        0b0110: '─',
+        0b1100: '┘',
+        0b0011: '┌',
+        0b1010: '└',
+        0b0101: '┐',
+        0b1101: '┤',
+        0b1011: '├',
+        0b0111: '┬',
+        0b1110: '┴',
+        0b1000: '╵',
+        0b0001: '╷',
+        0b0100: '╴',
+        0b0010: '╶',
+        compatible: [],
+      }
+    }
+    if (spec.shaping == 'wall_heavy' || spec.shaping == 'wall') {
+      // ┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥
+      spec.shaping = {
+        'default': '═',
+        0b1111: '╬',
+        0b1001: '║',
+        0b0110: '═',
+        0b1100: '╝',
+        0b0011: '╔',
+        0b1010: '╚',
+        0b0101: '╗',
+        0b1101: '╣',
+        0b1011: '╠',
+        0b0111: '╦',
+        0b1110: '╩',
+        0b1000: '╨',
+        0b0001: '╥',
+        0b0100: '╡',
+        0b0010: '╞',
+        compatible: [],
+      }
+    }
+    this.materials[name] = spec;
+    return spec;
   }
   
   log(message, color) {
