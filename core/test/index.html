@@ -8,7 +8,7 @@
         image.src = '../font.png';
         image.onload = () => {
           let char_data = {};
-          let chars = ' 0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!(),:/┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥';
+          let chars = ' 0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!(),:/┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥▒';
           for (let i = 0; i < chars.length; i++) {
             char_data[chars[i]] = { x: 10 * (i % 16), y: 10 * Math.floor(i / 16) };
           }
@@ -16,6 +16,22 @@
           let rl = new RL({ rows: 30, cols: 60, scale: 2, font });
           rl.logger(0, 25, 60, 5, true);
           document.body.appendChild(rl.canvas);
+          rl.on('load_level', () => {
+              let wall = rl.material('wall', {
+                  shaping : 'wall',
+                  color   : 0xFF_CC_AA,
+              });
+              let floor = rl.material('floor', {
+                  color: 0x22_33_44,
+                  character: '▒'
+              });
+              return {
+                  background: Array(100).fill(0).map(_ => Array(100).fill(floor)),
+                  foreground: Array(100).fill(0).map((_, i) => Array(100).fill(0).map((_, j) => (i == 0 || j == 0 || i == 99 || j == 99) ? wall : (Math.random() > 0.5 ? wall : null))),
+                  w: 100,
+                  h: 100,
+              }
+          });
           rl.start_loop();
           window.rl = rl;
           window.RLFont = RLFont;
@@ -26,7 +42,7 @@
           rl.log('╔═╗┌─┐');
           rl.log('║A║│B│');
           rl.log('╚═╝└─┘');
-          rl.on('tick_end', console.warn);
+          rl.on('tick_end', () => {});
           
           let panel = rl.action_panel(0, 0, 10, 25);
           window.panel = panel;
@@ -34,6 +50,17 @@
             let t = Math.floor(Math.random() * 100_000).toString(16);
             panel.add_action(t, t, t[0], () => panel.remove_action(t));
           });
+          
+          let vp = rl.viewport(10, 0, 25, 25);
+          let vp2 = rl.viewport(35, 0, 25, 25);
+          panel.add_action('up', 'haut', 'w', () => vp.target_y--);
+          panel.add_action('left', 'gauche', 'a', () => vp.target_x--);
+          panel.add_action('down', 'bas', 's', () => vp.target_y++);
+          panel.add_action('right', 'droite', 'd', () => vp.target_x++);
+          panel.add_action('2up', 'Haut', 'i', () => vp2.target_y--);
+          panel.add_action('2left', 'Gauche', 'j', () => vp2.target_x--);
+          panel.add_action('2down', 'Bas', 'k', () => vp2.target_y++);
+          panel.add_action('2right', 'Droite', 'l', () => vp2.target_x++);
         }
         </script>
     </body>
