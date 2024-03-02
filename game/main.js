@@ -1,5 +1,5 @@
 import { RL, RLFont } from '../core/rl.js';
-import { generate } from './generation.js';
+import { SIZE_X, SIZE_Y, generate } from './generation.js';
 
 const canvas = document.getElementById('roguelike');
 canvas.width  = 10 * 40;
@@ -61,32 +61,60 @@ image.onload = () => {
       character : '┄',
       color     : 0x99_55_11,
       tangible  : false,
+      shaping   : {
+          'default': '┄',
+          0b1001: '┆',
+          0b0110: '┄',
+          compatible: [],
+      }
   });
   let wall = rl.material('wall', {
       shaping : 'wall',
       color   : 0x99_99_99,
       // tangible: true
   });
+  let fake_wall = rl.material('fake_wall', {
+      shaping  : 'wall',
+      color    : 0x99_CC_99,
+      tangible : false,
+  });
   wall.shaping.compatible.push(door);
-  let floor0 = rl.material('floor', {
+  wall.shaping.compatible.push(fake_wall);
+  door.shaping.compatible.push(wall);
+  door.shaping.compatible.push(fake_wall);
+  fake_wall.shaping.compatible.push(wall);
+  fake_wall.shaping.compatible.push(door);
+  let floor0 = rl.material('floor0', {
       color: 0x22_33_44,
       character: '▒'
   });
-  let floor1 = rl.material('floor', {
+  let floor1 = rl.material('floor1', {
       color: 0x44_22_33,
       character: '▒'
   });
-  let floor2 = rl.material('floor', {
+  let floor2 = rl.material('floor2', {
       color: 0x33_44_22,
       character: '▒'
   });
+  let floor_source = rl.material('floor_source', {
+      color: 0x22_22_22,
+      character: '▒'
+  });
+  let floor_target = rl.material('floor_target', {
+      color: 0x44_44_44,
+      character: '▒'
+  });
+  let floor_hidden = rl.material('floor_hidden', {
+      color: 0x22_44_44,
+      character: '▒'
+  });
   rl.on('load_level', () => {
-      let { background, foreground } = generate({ wall, floors: { floor0, floor1, floor2 }, door, x: 1, y: 1 });
+      let { background, foreground } = generate({ fake_wall, wall, floors: { floor0, floor1, floor2, floor_source, floor_target, floor_hidden }, door, x: 1, y: 1 });
       return {
           background,
           foreground,
-          w: 100,
-          h: 100,
+          w: SIZE_X,
+          h: SIZE_Y,
           entities: [player],
       }
   });
