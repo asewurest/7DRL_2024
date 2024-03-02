@@ -100,6 +100,8 @@ export class RL {
         this.current_level = 0;
         this.level_order = [];
         this.viewports = [];
+        this.overlays = [];
+        this.text_boxes = [];
     }
 
     on(event, handler, options) {
@@ -195,8 +197,30 @@ export class RL {
         }
     }
     
+    describe(level, x, y) {
+        level = this.levels[level];
+        let lines = [];
+        if (x < 0 || x >= level.w || y < 0 || y >= level.h) {
+            lines.push('Nothing');
+        } else {
+            for (let entity of level.entities) {
+                if (entity.x == x && entity.y == y) {
+                    lines.push(entity.description || 'Nondescript entity');
+                } 
+            }
+            if (level.foreground[x][y] && level.foreground[x][y].spec.description) {
+                lines.push(level.foreground[x][y].spec.description);
+            }
+            if (level.background[x][y] && level.background[x][y].spec.description) {
+                lines.push(level.background[x][y].spec.description);
+            }
+        }
+        return lines;
+    }
+    
     viewport(x, y, w, h, { current_level, target_x, target_y, tracking } = {}) {
         let viewport = {
+            active: true,
             x,
             y,
             w,
@@ -207,16 +231,56 @@ export class RL {
             tracking      : tracking      || null,
             remove: () => {
                 if (this.viewports.includes(viewport)) {
-                    this.viewports.slice(this.viewports.indexOf(viewport), 1);
+                    this.viewports.splice(this.viewports.indexOf(viewport), 1);
                 }
             }
         };
         this.viewports.push(viewport);
         return viewport;
     }
+    
+    text_box(x, y, w, h, text = '', color = 0xFF_FF_FF) {
+        let text_box = {
+            active: true,
+            x,
+            y,
+            w,
+            h,
+            color,
+            last_width: w,
+            regex: new RegExp(`.{1,${w}}(\n?)`, 'g'),
+            text,
+            remove: () => {
+                if (this.text_boxes.includes(text_box)) {
+                    this.text_boxes.splice(this.text_boxes.indexOf(text_box), 1);
+                }
+            }
+        };
+        this.text_boxes.push(text_box);
+        return text_box;
+    }
+    
+    overlay(x, y, { level, color, text } = {}) {
+        let overlay = {
+            active: true,
+            x,
+            y,
+            level : level || 0,
+            text  : text  || 'X',
+            color : color || null,
+            remove: () => {
+                if (this.overlays.includes(overlay)) {
+                    this.overlays.splice(this.overlays.indexOf(overlay), 1);
+                }
+            }
+        };
+        this.overlays.push(overlay);
+        return overlay;
+    }
 
     action_panel(x, y, w, h) {
         let action_panel = {
+            active: true,
             x,
             y,
             w,
@@ -249,6 +313,7 @@ export class RL {
 
     logger(x, y, w, h, is_default = false) {
         let logger = {
+            active: true,
             x,
             y,
             w,
@@ -322,6 +387,10 @@ export class RL {
                 }
             }
         }
+    }
+    
+    level_of(entity) {
+        return this.level_order.map(x => [x, this.levels[x]]).find(([_, { entities }]) => entities.includes(entity))[0];
     }
 
     update() {
@@ -406,6 +475,7 @@ export class RL {
 
         ctx.fillStyle = canvas_color(this.background);
         this.viewports.forEach(viewport => {
+            if (!viewport.active) return;
             let level = this.levels[viewport.current_level];
             if (level.entities.includes(viewport.track)) {
                 viewport.target_x = viewport.track.x;
@@ -444,6 +514,10 @@ export class RL {
                     } else {
                         draw = false;
                     }
+                    let maybe_overlay = this.overlays.find(o => o.active && o.level == viewport.current_level && o.x == x && o.y == y);
+                    if (maybe_overlay) {
+                        char = maybe_overlay.text;
+                    }
                     if (draw) {
                         this.font.draw_char(ctx, char,  10 * (x + viewport.x + off_x - viewport.target_x), 10 * (y + viewport.y + off_y - viewport.target_y), color);
                     }
@@ -452,14 +526,30 @@ export class RL {
         });
         
         this.loggers.forEach(logger => {
+            if (!logger.active) return;
             ctx.fillRect(logger.x * 10, logger.y * 10, logger.w * 10, logger.h * 10);
             for (let i = 0; i < logger.lines.length; i++) {
                 let [message, color, repeat] = logger.lines[i];
                 this.font.draw_text(ctx, (repeat + message).slice(0, logger.w), logger.x * 10, (logger.y + i) * 10, color);
             }
         });
+        
+        this.text_boxes.forEach(box => {
+            if (!box.active) return;
+            ctx.fillRect(box.x * 10, box.y * 10, box.w * 10, box.h * 10);
+            if (box.last_width != box.w) {
+                box.last_width = box.w;
+                box.regex = new RegExp(`.{1,${box.w}}(\n?)`, 'g');
+            }
+            let lines = box.text.match(box.regex);
+            for (let i = 0; i < lines.length; i++) {
+                if (i >= box.h) break;
+                this.font.draw_text(ctx, lines[i], box.x * 10, (box.y + i) * 10, box.color);
+            }
+        });
 
         this.action_panels.forEach(action_panel => {
+            if (!action_panel.active) return;
             ctx.fillRect(action_panel.x * 10, action_panel.y * 10, action_panel.w * 10, action_panel.h * 10);
             let i = -1;
             for (let v of action_panel.order) {
@@ -597,6 +687,7 @@ export class RLFont {
     }
 
     draw_text(ctx, text, x, y, color = 0xFF_FF_FF) {
+        let base_x = x;
         if (!this.images[color]) {
             let ctx = RLFont['_multipurpose_context'];
             let canvas = ctx.canvas;
@@ -623,6 +714,11 @@ export class RLFont {
             this.images[color].src = canvas.toDataURL();
         }
         for (let i = 0; i < text.length; i++) {
+            if (text[i] == '\n') {
+                x = base_x;
+                y += this.char_h;
+                continue;
+            }
             ctx.drawImage(this.images[color], this.characters[text[i]].x, this.characters[text[i]].y, this.char_w, this.char_h, x + i * this.char_w, y, this.char_w, this.char_h);
         }
     }

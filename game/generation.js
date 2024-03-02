@@ -1,5 +1,5 @@
-export const SIZE_X = 50;
-export const SIZE_Y = 50;
+export const SIZE_X = 64;
+export const SIZE_Y = 54;
 
 export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, y: start_y }) {
     let rooms = [
