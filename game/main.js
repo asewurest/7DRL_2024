@@ -1,4 +1,5 @@
 import { RL, RLFont } from '../core/rl.js';
+import { generate } from './generation.js';
 
 const canvas = document.getElementById('roguelike');
 canvas.width  = 10 * 40;
@@ -23,7 +24,7 @@ let image = new Image();
 image.src = './core/font.png';
 image.onload = () => {
   let char_data = {};
-  let chars = ' 0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!(),:/┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥▒@↑↓←→';
+  let chars = ' 0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!(),:/┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥▒@↑↓←→┄┈┆┊';
   for (let i = 0; i < chars.length; i++) {
     char_data[chars[i]] = { x: 10 * (i % 16), y: 10 * Math.floor(i / 16) };
   }
@@ -56,20 +57,34 @@ image.onload = () => {
           movement_listener([{ kind: 'move', x: 1, y: 0 }])
       }
   });
-  
+  let door = rl.material('door', {
+      character : '┄',
+      color     : 0x99_55_11,
+      tangible  : false,
+  });
+  let wall = rl.material('wall', {
+      shaping : 'wall',
+      color   : 0x99_99_99,
+      // tangible: true
+  });
+  wall.shaping.compatible.push(door);
+  let floor0 = rl.material('floor', {
+      color: 0x22_33_44,
+      character: '▒'
+  });
+  let floor1 = rl.material('floor', {
+      color: 0x44_22_33,
+      character: '▒'
+  });
+  let floor2 = rl.material('floor', {
+      color: 0x33_44_22,
+      character: '▒'
+  });
   rl.on('load_level', () => {
-      let wall = rl.material('wall', {
-          shaping : 'wall',
-          color   : 0xFF_CC_AA,
-          // tangible: true
-      });
-      let floor = rl.material('floor', {
-          color: 0x22_33_44,
-          character: '▒'
-      });
+      let { background, foreground } = generate({ wall, floors: { floor0, floor1, floor2 }, door, x: 1, y: 1 });
       return {
-          background: Array(100).fill(0).map(_ => Array(100).fill(floor)),
-          foreground: Array(100).fill(0).map((_, i) => Array(100).fill(0).map((_, j) => (i == 0 || j == 0 || i == 99 || j == 99) ? wall : null)),
+          background,
+          foreground,
           w: 100,
           h: 100,
           entities: [player],
