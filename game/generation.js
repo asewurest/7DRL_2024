@@ -1,5 +1,5 @@
-export const SIZE_X = 100;
-export const SIZE_Y = 100;
+export const SIZE_X = 50;
+export const SIZE_Y = 50;
 
 export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, y: start_y }) {
     let rooms = [
@@ -23,7 +23,7 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
         let h = room.y2 - room.y1;
         let area = w * h;
         let score = Math.random() * area;
-        if (score <= 80 && it++ != 0) {
+        if (score <= 80 && it++ != 0 && area < 300) {
             finished.push(room);
             rooms.splice(i--, 1);
             continue;
@@ -92,8 +92,8 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
                     let intersect = {
                         x1: x,
                         x2: x,
-                        y1: Math.max(room.y1, other.y1),
-                        y2: Math.min(room.y2, other.y2),
+                        y1: Math.max(room.y1, other.y1) + 1,
+                        y2: Math.min(room.y2, other.y2) - 1,
                         other,
                         doors: [],
                     };
@@ -105,8 +105,8 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
                     let intersect = {
                         y1: y,
                         y2: y,
-                        x1: Math.max(room.x1, other.x1),
-                        x2: Math.min(room.x2, other.x2),
+                        x1: Math.max(room.x1, other.x1) + 1,
+                        x2: Math.min(room.x2, other.x2) - 1,
                         other,
                         doors: [],
                     };
@@ -130,7 +130,7 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
     while (current != target_room) {
         current.walked = true;
         let the_one = current.adjacent[Math.floor(Math.random() * current.adjacent.length)];
-        let door = { x: the_one.x1 + 2 + Math.floor(Math.random() * (the_one.x2 - the_one.x1 - 2)), y: the_one.y1 + 2 + Math.floor(Math.random() * (the_one.y2 - the_one.y1 - 2)) };
+        let door = { x: the_one.x1 + Math.floor(Math.random() * (the_one.x2 - the_one.x1)), y: the_one.y1 + Math.floor(Math.random() * (the_one.y2 - the_one.y1)) };
         door.x = Math.max(Math.min(door.x, the_one.x2), the_one.x1);
         door.y = Math.max(Math.min(door.y, the_one.y2), the_one.y1);
         let length = Math.max(the_one.x2 - the_one.x1, the_one.y2 - the_one.y1);
@@ -158,7 +158,7 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
             }
             room.hidden = hidden;
             room.walked = !hidden;
-            let door = { hidden, x: parent_connection.x1 + 2 + Math.floor(Math.random() * (parent_connection.x2 - parent_connection.x1 - 2)), y: parent_connection.y1 + 2 + Math.floor(Math.random() * (parent_connection.y2 - parent_connection.y1 - 2)) };
+            let door = { hidden, x: parent_connection.x1 + Math.floor(Math.random() * (parent_connection.x2 - parent_connection.x1)), y: parent_connection.y1 + Math.floor(Math.random() * (parent_connection.y2 - parent_connection.y1)) };
             door.x = Math.max(Math.min(door.x, parent_connection.x2), parent_connection.x1);
             door.y = Math.max(Math.min(door.y, parent_connection.y2), parent_connection.y1);
             let length = Math.max(parent_connection.x2 - parent_connection.x1, parent_connection.y2 - parent_connection.y1);
@@ -223,6 +223,13 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
             for (let door of adjacent.doors) {
                 foreground[door.x][door.y] = door.hidden ? fake_wall : door_mtl;
             }
+            // if (adjacent.x1 == adjacent.x2) {
+            //     for (let y = adjacent.y1; y <= adjacent.y2; y++) {
+            //         foreground[adjacent.x1][y] = fake_wall;
+            //     }
+            // } else {
+                
+            // }
         }
     }
     return {
