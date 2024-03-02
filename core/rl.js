@@ -297,6 +297,7 @@ export class RL {
     }
     
     post_process_level(level) {
+        level.entities.forEach(x => x.planned_movement = { x: 0, y: 0 });
         for (let property of ['foreground', 'background']) {
             let array = level[property];
             function tile(x, y) {
@@ -354,6 +355,38 @@ export class RL {
             if (this.entity_moves.resolved) {
                 let result = this.entity_moves.output;
                 // <tick-end-stuff like="moving entities, checking which ones would die">
+                for (let i = 0; i < result.length; i++) {
+                    let level = this.levels[this.level_order[i]];
+                    for (let j = 0; j < result[i].length; j++) {
+                        let entity = level.entities[j];
+                        entity.planned_movement.x = 0;
+                        entity.planned_movement.y = 0;
+                        let moves  = result[i][j];
+                        for (let move of moves) {
+                            if (move.kind == 'move') {
+                                entity.planned_movement.x += move.x;
+                                entity.planned_movement.y += move.y;
+                            }
+                        }
+                    }
+                }
+                for (let level of this.level_order.map(x => this.levels[x])) {
+                    for (let j = 0; j < level.entities.length; j++) {
+                        let entity = level.entities[j];
+                        let original_x = entity.x;
+                        let original_y = entity.y;
+                        entity.x += entity.planned_movement.x;
+                        entity.y += entity.planned_movement.y;
+                        if (entity.x < 0) entity.x = 0;
+                        if (entity.y < 0) entity.y = 0;
+                        if (entity.x >= level.w) entity.x = level.w - 1;
+                        if (entity.y >= level.h) entity.y = level.h - 1;
+                        if (level.foreground[entity.x][entity.y]?.spec.tangible) {
+                            entity.x = original_x;
+                            entity.y = original_y;
+                        }
+                    }
+                }
                 // <frame-end-stuff/>
                 this.trigger('tick_end', undefined);
                 this.start_entity_move_requests();
@@ -367,9 +400,9 @@ export class RL {
 
         ctx.scale(this.scale, this.scale);
 
-        for (let i = this.rows; i < this.rows * this.cols; i++) {
-            this.font.draw_char(ctx, 'A', 10 * (i % this.rows), 10 * Math.floor(i / this.rows), (i % 10) * 5329099);
-        }
+        // for (let i = this.rows; i < this.rows * this.cols; i++) {
+        //     this.font.draw_char(ctx, 'A', 10 * (i % this.rows), 10 * Math.floor(i / this.rows), (i % 10) * 5329099);
+        // }
 
         ctx.fillStyle = canvas_color(this.background);
         this.viewports.forEach(viewport => {

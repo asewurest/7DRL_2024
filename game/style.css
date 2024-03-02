@@ -1,0 +1,12 @@
+#roguelike {
+    display        : inline-block;
+    vertical-align : middle;
+}
+
+body {
+    text-align       : center;
+    line-height      : 100vh;
+    margin           : 0;
+    padding          : 0;
+    background-color : black;
+}
