@@ -1,8 +1,23 @@
 import { RL, RLFont } from '../core/rl.js';
 
 const canvas = document.getElementById('roguelike');
-canvas.width  = 20 * 40;
-canvas.height = 20 * 30;
+canvas.width  = 10 * 40;
+canvas.height = 10 * 30;
+
+const fullscreen_button = document.getElementById('fullscreen');
+fullscreen_button.addEventListener('click', async ({ button }) => {
+    if (button == 0) {
+        await document.body.requestFullscreen();
+        fullscreen_button.style.display = 'none';
+        let handle;
+        handle = setInterval(() => {
+            if (document.fullscreenElement != document.body) {
+                fullscreen_button.style.display = 'block';
+                clearInterval(handle);
+            }
+        }, 100);
+    }
+});
 
 let image = new Image();
 image.src = './core/font.png';
@@ -13,7 +28,7 @@ image.onload = () => {
     char_data[chars[i]] = { x: 10 * (i % 16), y: 10 * Math.floor(i / 16) };
   }
   let font = new RLFont(10, 10, image, char_data);
-  let rl = new RL({ rows: 30, cols: 40, scale: 2, font, c: canvas });
+  let rl = new RL({ rows: 30, cols: 40, scale: 1, font, c: canvas });
   rl.logger(0, 25, 60, 5, true);
   // document.body.appendChild(rl.canvas);
   let movement_listener = () => {};
