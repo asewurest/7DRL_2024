@@ -149,7 +149,13 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
         for (let room of linked) {
             let parent_connection = room.adjacent.filter(x => x.other.walked);
             parent_connection = parent_connection[Math.floor(Math.random() * parent_connection.length)];
-            let hidden = typeof room.hidden === 'boolean' ? room.hidden : (Math.random() > 0.75);
+            if (typeof room.hidden === 'boolean') continue;
+            let hidden = Math.random() > 0.8;
+            if (!hidden && Math.random() > 0.6) {
+                room.hidden = true;
+                room.unreachable = true;
+                continue; // unreachable rooms
+            }
             room.hidden = hidden;
             room.walked = !hidden;
             let door = { hidden, x: parent_connection.x1 + 2 + Math.floor(Math.random() * (parent_connection.x2 - parent_connection.x1 - 2)), y: parent_connection.y1 + 2 + Math.floor(Math.random() * (parent_connection.y2 - parent_connection.y1 - 2)) };
@@ -199,6 +205,8 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
             floor_type = 'floor_target';
         } else if (room == source) {
             floor_type = 'floor_source';
+        } else if (room.unreachable) {
+            floor_type = 'floor_unreachable';
         } else if (room.hidden) {
             floor_type = 'floor_hidden';
         }

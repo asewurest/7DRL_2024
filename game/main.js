@@ -108,8 +108,12 @@ image.onload = () => {
       color: 0x22_44_44,
       character: '▒'
   });
+  let floor_unreachable = rl.material('floor_unreachable', {
+      color: 0x77_77_77,
+      character: '#'
+  });
   rl.on('load_level', () => {
-      let { background, foreground } = generate({ fake_wall, wall, floors: { floor0, floor1, floor2, floor_source, floor_target, floor_hidden }, door, x: 1, y: 1 });
+      let { background, foreground } = generate({ fake_wall, wall, floors: { floor_unreachable, floor0, floor1, floor2, floor_source, floor_target, floor_hidden }, door, x: 1, y: 1 });
       return {
           background,
           foreground,
