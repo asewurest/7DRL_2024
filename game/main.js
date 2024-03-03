@@ -48,6 +48,7 @@ image.onload = () => {
       x: 1,
       y: 1,
       description: 'You',
+      light_intensity: 2,
   };
   
   addEventListener('keydown', e => {
@@ -140,6 +141,7 @@ image.onload = () => {
           w: SIZE_X,
           h: SIZE_Y,
           entities: [player],
+          light_sources: [player],
       }
   });
   rl.start_loop();

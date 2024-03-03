@@ -140,6 +140,7 @@ export class RL {
         spec.tangible = (typeof spec.tangible === 'undefined') ? true : spec.tangible;
         spec.shaping = spec.shaping || false;
         spec.color = spec.color || 0xAA_AA_AA;
+        spec.opaque = (typeof spec.opaque === 'undefined') ? true : spec.opaque;
         if (spec.shaping == 'wall_thin') {
             // ┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥
             spec.shaping = {
@@ -363,6 +364,9 @@ export class RL {
     
     post_process_level(level) {
         level.entities.forEach(x => x.planned_movement = { x: 0, y: 0 });
+        if (!level.light_sources) {
+            level.light_sources = [];
+        }
         for (let property of ['foreground', 'background']) {
             let array = level[property];
             function tile(x, y) {
@@ -385,6 +389,45 @@ export class RL {
                         array[i][j].character = array[i][j].spec.shaping[key] || array[i][j].spec.shaping['default'];
                     }
                 }
+            }
+        }
+        level.light_map = new Float64Array(level.w * level.h);
+    }
+
+    do_lighting(level) {
+        level.light_map.fill(0);
+        for (let x = 0; x < level.w; x++) {
+            for (let y = 0; y < level.h; y++) {
+                let idx = y * level.w + x;
+                let val = 0;
+                for (let i = 0; i < level.light_sources.length; i++) {
+                    let source = level.light_sources[i];
+                    let dx = x - source.x;
+                    let dy = y - source.y;
+                    let sq_dist = (x - source.x) ** 2 + (y - source.y) ** 2;
+                    let dist = Math.sqrt(sq_dist);
+                    dx /= (5 * dist);
+                    dy /= (5 * dist);
+                    let intensity = source.light_intensity - Math.cbrt(sq_dist);
+                    if (intensity <= 0) continue;
+                    let X = source.x + 0.5;
+                    let Y = source.y + 0.5;
+                    let reaches = true;
+                    while (Math.floor(X) != x || Math.floor(Y) != y) {
+                        X += dx;
+                        Y += dy;
+                        let fl_x = Math.floor(X);
+                        let fl_y = Math.floor(Y);
+                        if ((fl_x != x || fl_y != y) && level.foreground[Math.floor(X)][Math.floor(Y)] != null) {
+                            reaches = false;
+                            break;
+                        }
+                    }
+                    if (reaches) {
+                        val += intensity;
+                    }
+                }
+                level.light_map[idx] = Math.min(1, Math.max(0, val));
             }
         }
     }
@@ -455,6 +498,7 @@ export class RL {
                             entity.y = original_y;
                         }
                     }
+                    this.do_lighting(level);
                 }
                 // <frame-end-stuff/>
                 this.trigger('tick_end', undefined);
@@ -519,10 +563,12 @@ export class RL {
                         char = maybe_overlay.text;
                     }
                     if (draw) {
+                        ctx.globalAlpha = level.light_map[y * level.w + x];
                         this.font.draw_char(ctx, char,  10 * (x + viewport.x + off_x - viewport.target_x), 10 * (y + viewport.y + off_y - viewport.target_y), color);
                     }
                 }
             }
+            ctx.globalAlpha = 1;
         });
         
         this.loggers.forEach(logger => {
