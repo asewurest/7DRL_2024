@@ -1,3 +1,9 @@
+const UNKNOWN = 0;
+const NORMAL  = 1;
+// anything else is VISITED
+const WALL    = 2;
+const NOTHING = 3;
+
 function canvas_color(c) {
     return '#' + c.toString(16).padEnd(6, '0');
 }
@@ -30,13 +36,15 @@ export class RL {
             c,
             background,
             scale,
-            unload_hidden
+            unload_hidden,
+            char_map,
         } = (options || {});
         font       = font       || RLFont.default_font();
         rows       = rows       || 25;
         cols       = cols       || 80;
         scale      = scale      || 1;
         background = background || 0x000000;
+        char_map   = char_map   || '#.';
         if (typeof unload_hidden === 'undefined') {
             unload_hidden = true;
         }
@@ -60,6 +68,8 @@ export class RL {
         this.pixel_height = scale * rows * font.char_h;
         /** @type {boolean} */
         this.unload_hidden = unload_hidden;
+        /** @type {string} */
+        this.char_map = char_map;
         if (c instanceof CanvasRenderingContext2D) {
             this.canvas = c.canvas;
             this.ctx = c;
@@ -363,7 +373,10 @@ export class RL {
     }
     
     post_process_level(level) {
-        level.entities.forEach(x => x.planned_movement = { x: 0, y: 0 });
+        level.entities.forEach(x => {
+            x.planned_movement = { x: 0, y: 0 };
+            x.memory_map = {};
+        });
         if (!level.light_sources) {
             level.light_sources = [];
         }
@@ -502,7 +515,7 @@ export class RL {
                         }
                     }
                 }
-                for (let level of this.level_order.map(x => this.levels[x])) {
+                for (let [level_name, level] of this.level_order.map(x => [x, this.levels[x]])) {
                     for (let j = 0; j < level.entities.length; j++) {
                         let entity = level.entities[j];
                         let original_x = entity.x;
@@ -516,6 +529,46 @@ export class RL {
                         if (level.foreground[entity.x][entity.y]?.spec.tangible) {
                             entity.x = original_x;
                             entity.y = original_y;
+                        }
+
+                        if (!entity.memory_map[level_name]) {
+                            entity.memory_map[level_name] = new Uint8Array(level.w * level.h).fill(UNKNOWN);
+                        } else {
+                            for (let x = 0; x < level.w; x++) {
+                                for (let y = 0; y < level.h; y++) {
+                                    let idx = y * level.w + x;
+                                    if (entity.memory_map[level_name][idx] == NORMAL && level.light_map[idx] > 0) {
+                                        entity.memory_map[level_name][idx] = level.foreground[x][y]?.spec.opaque ? WALL : NOTHING;
+                                    }
+                                }
+                            }
+                        }
+                        for (let x = 0; x < level.w; x++) {
+                            for (let y = 0; y < level.h; y++) {
+                                /* start of line algorithm adapted from <https://zingl.github.io/bresenham.html> */
+                                let x0 = entity.x;
+                                let y0 = entity.y;
+                                let x1 = x;
+                                let y1 = y;
+                                let dx =  Math.abs(x1-x0), sx = x0 < x1 ? 1 : -1;
+                                let dy = -Math.abs(y1-y0), sy = y0 < y1 ? 1 : -1; 
+                                let err = dx + dy, e2; /* error value e_xy */
+                                while (true) {  /* loop */
+                                    let idx = y0 * level.w + x0;
+                                    // if (entity.memory_map[level_name][idx] == NORMAL) break;
+                                    // setPixel(x0,y0);
+                                    entity.memory_map[level_name][idx] = NORMAL;
+                                    if (level.foreground[x0][y0]?.spec.opaque) {
+                                        // reaches = false;
+                                        break;
+                                    }
+                                    if (x0 == x1 && y0 == y1) break;
+                                    e2 = 2 * err;
+                                    if (e2 >= dy) { err += dy; x0 += sx; } /* e_xy+e_x > 0 */
+                                    if (e2 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
+                                }
+                                /* end of adapted line algorithm */
+                            }
                         }
                     }
                     this.do_lighting(level);
@@ -545,6 +598,10 @@ export class RL {
                 viewport.target_x = viewport.track.x;
                 viewport.target_y = viewport.track.y;
             }
+            let map = null;
+            if (viewport.fov_entity) {
+                map = viewport.fov_entity.memory_map[viewport.current_level];
+            }
             ctx.fillRect(viewport.x * 10, viewport.y * 10, viewport.w * 10, viewport.h * 10);
             let off_x  = Math.floor(viewport.w / 2);
             let off_y  = Math.floor(viewport.h / 2);
@@ -566,24 +623,36 @@ export class RL {
                     let char;
                     let color = this.background;
                     let draw = true;
-                    if (anyone_here) {
-                        char  = anyone_here.character;
-                        color = anyone_here.color;
-                    } else if (level.foreground[x][y]) {
-                        char  = level.foreground[x][y].character;
-                        color = level.foreground[x][y].spec.color;
-                    } else if (level.background[x][y]) {
-                        char  = level.background[x][y].character;
-                        color = level.background[x][y].spec.color;
-                    } else {
-                        draw = false;
+                    let idx = y * level.w + x;
+                    let ignore_light = false;
+                    if (!map || (map[idx] == NORMAL && level.light_map[idx] > 0)) {
+                        if (anyone_here) {
+                            char  = anyone_here.character;
+                            color = anyone_here.color;
+                        } else if (level.foreground[x][y]) {
+                            char  = level.foreground[x][y].character;
+                            color = level.foreground[x][y].spec.color;
+                        } else if (level.background[x][y]) {
+                            char  = level.background[x][y].character;
+                            color = level.background[x][y].spec.color;
+                        } else {
+                            draw = false;
+                        }
+                    } else if (map[idx] == WALL) {
+                        char = '#';
+                        color = 0x33_33_33;
+                        ignore_light = true;
                     }
                     let maybe_overlay = this.overlays.find(o => o.active && o.level == viewport.current_level && o.x == x && o.y == y);
                     if (maybe_overlay) {
                         char = maybe_overlay.text;
                     }
                     if (draw) {
-                        ctx.globalAlpha = level.light_map[y * level.w + x];
+                        if (ignore_light) {
+                            ctx.globalAlpha = 1;
+                        } else {
+                            ctx.globalAlpha = level.light_map[y * level.w + x];
+                        }
                         this.font.draw_char(ctx, char,  10 * (x + viewport.x + off_x - viewport.target_x), 10 * (y + viewport.y + off_y - viewport.target_y), color);
                     }
                 }
@@ -723,7 +792,7 @@ export class RLFont {
     }
 
     draw_char(ctx, c, x, y, color = 0xFF_FF_FF) {
-        c = c || '!';
+        c = c || '!';
         if (!this.images[color]) {
             let ctx = RLFont['_multipurpose_context'];
             let canvas = ctx.canvas;

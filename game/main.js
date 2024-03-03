@@ -48,7 +48,7 @@ image.onload = () => {
       x: 1,
       y: 1,
       description: 'You',
-      light_intensity: 2,
+      light_intensity: 20,
   };
   
   addEventListener('keydown', e => {
@@ -191,6 +191,7 @@ image.onload = () => {
   let vp = rl.viewport(SIDEBAR_WIDTH + 1, 0, 80 - (SIDEBAR_WIDTH + 1), (60 - (LOGGER_HEIGHT + 1)));
   vp.target_x = SIZE_X / 2;
   vp.target_y = SIZE_Y / 2;
+  vp.fov_entity = player;
   window.player = player;
   
   rl.log('hi');
