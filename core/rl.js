@@ -209,12 +209,17 @@ export class RL {
         }
     }
     
-    describe(level, x, y) {
+    describe(level, x, y, perspective) {
+        let level_name = level;
         level = this.levels[level];
         let lines = [];
         if (x < 0 || x >= level.w || y < 0 || y >= level.h) {
             lines.push('Nothing');
         } else {
+            // console.log(perspective);
+            if (perspective && perspective.memory_map[level_name][y * level.w + x] != NORMAL) {
+                return [['???'], ['(Memory)', 'the what'], ['(Memory)', 'Wall'], ['(Memory)', 'Floor'], ['(Memory)', 'Door']][perspective.memory_map[level_name][y * level.w + x]];
+            }
             for (let entity of level.entities) {
                 if (entity.x == x && entity.y == y) {
                     lines.push(entity.description || 'Nondescript entity');
@@ -419,10 +424,10 @@ export class RL {
                     // let dx = x - source.x;
                     // let dy = y - source.y;
                     let sq_dist = (x - source.x) ** 2 + (y - source.y) ** 2;
-                    let dist = Math.sqrt(sq_dist);
+                    // let dist = Math.sqrt(sq_dist);
                     // dx /= (5 * dist);
                     // dy /= (5 * dist);
-                    let intensity = source.light_intensity - Math.cbrt(sq_dist);
+                    let intensity = source.light_intensity - Math.sqrt(sq_dist);
                     if (intensity <= 0) continue;
                     // let X = source.x + 0.5;
                     // let Y = source.y + 0.5;
