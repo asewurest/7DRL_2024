@@ -1,8 +1,9 @@
-const UNKNOWN = 0;
-const NORMAL  = 1;
+const UNKNOWN  = 0;
+const NORMAL   = 1;
 // anything else is VISITED
-const WALL    = 2;
-const NOTHING = 3;
+const WALL     = 2;
+const NOTHING  = 3;
+const DOORLIKE = 4;
 
 function canvas_color(c) {
     return '#' + c.toString(16).padEnd(6, '0');
@@ -539,7 +540,7 @@ export class RL {
                                     let idx = y * level.w + x;
                                     if (entity.memory_map[level_name][idx] == NORMAL) {
                                         if (level.light_map[idx] > 0) {
-                                            entity.memory_map[level_name][idx] = level.foreground[x][y]?.spec.opaque ? WALL : NOTHING;
+                                            entity.memory_map[level_name][idx] = level.foreground[x][y]?.spec.opaque ? (level.foreground[x][y].spec.tangible ? WALL : DOORLIKE) : NOTHING;
                                         } else {
                                             entity.memory_map[level_name][idx] = UNKNOWN;
                                         }
@@ -643,7 +644,7 @@ export class RL {
                             draw = false;
                         }
                     } else if (map[idx] != UNKNOWN) {
-                        char = map[idx] == WALL ? '#' : '.';
+                        char = '  #.+'[map[idx]];
                         color = 0x33_33_33;
                         ignore_light = true;
                     }
