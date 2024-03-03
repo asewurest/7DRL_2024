@@ -402,27 +402,47 @@ export class RL {
                 let val = 0;
                 for (let i = 0; i < level.light_sources.length; i++) {
                     let source = level.light_sources[i];
-                    let dx = x - source.x;
-                    let dy = y - source.y;
+                    // let dx = x - source.x;
+                    // let dy = y - source.y;
                     let sq_dist = (x - source.x) ** 2 + (y - source.y) ** 2;
                     let dist = Math.sqrt(sq_dist);
-                    dx /= (5 * dist);
-                    dy /= (5 * dist);
+                    // dx /= (5 * dist);
+                    // dy /= (5 * dist);
                     let intensity = source.light_intensity - Math.cbrt(sq_dist);
                     if (intensity <= 0) continue;
-                    let X = source.x + 0.5;
-                    let Y = source.y + 0.5;
+                    // let X = source.x + 0.5;
+                    // let Y = source.y + 0.5;
                     let reaches = true;
-                    while (Math.floor(X) != x || Math.floor(Y) != y) {
-                        X += dx;
-                        Y += dy;
-                        let fl_x = Math.floor(X);
-                        let fl_y = Math.floor(Y);
-                        if ((fl_x != x || fl_y != y) && level.foreground[Math.floor(X)][Math.floor(Y)] != null) {
+                    // while (Math.floor(X) != x || Math.floor(Y) != y) {
+                    //     X += dx;
+                    //     Y += dy;
+                    //     let fl_x = Math.floor(X);
+                    //     let fl_y = Math.floor(Y);
+                    //     if ((fl_x != x || fl_y != y) && level.foreground[Math.floor(X)][Math.floor(Y)] != null) {
+                    //         reaches = false;
+                    //         break;
+                    //     }
+                    // }
+                    /* start of line algorithm adapted from <https://zingl.github.io/bresenham.html> */
+                    let x0 = source.x;
+                    let y0 = source.y;
+                    let x1 = x;
+                    let y1 = y;
+                    let dx =  Math.abs(x1-x0), sx = x0 < x1 ? 1 : -1;
+                    let dy = -Math.abs(y1-y0), sy = y0 < y1 ? 1 : -1; 
+                    let err = dx + dy, e2; /* error value e_xy */
+                    while (true) {  /* loop */
+                        // setPixel(x0,y0);
+                        if (x0 == x1 && y0 == y1) break;
+                        if (level.foreground[x0][y0]?.spec.opaque) {
                             reaches = false;
                             break;
                         }
+                        e2 = 2 * err;
+                        if (e2 >= dy) { err += dy; x0 += sx; } /* e_xy+e_x > 0 */
+                        if (e2 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
                     }
+                    /* end of adapted line algorithm */
                     if (reaches) {
                         val += intensity;
                     }
