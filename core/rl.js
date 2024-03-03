@@ -531,7 +531,10 @@ export class RL {
                             entity.x = original_x;
                             entity.y = original_y;
                         }
-
+                    }
+                    this.do_lighting(level);
+                    for (let j = 0; j < level.entities.length; j++) {
+                        let entity = level.entities[j];
                         if (!entity.memory_map[level_name]) {
                             entity.memory_map[level_name] = new Uint8Array(level.w * level.h).fill(UNKNOWN);
                         } else {
@@ -539,11 +542,12 @@ export class RL {
                                 for (let y = 0; y < level.h; y++) {
                                     let idx = y * level.w + x;
                                     if (entity.memory_map[level_name][idx] == NORMAL) {
-                                        if (level.light_map[idx] > 0) {
+                                        // /* ! */ entity.memory_map[level_name][idx] = UNKNOWN; continue;
+                                        // if (level.light_map[idx] > 0) {
                                             entity.memory_map[level_name][idx] = level.foreground[x][y]?.spec.opaque ? (level.foreground[x][y].spec.tangible ? WALL : DOORLIKE) : NOTHING;
-                                        } else {
-                                            entity.memory_map[level_name][idx] = UNKNOWN;
-                                        }
+                                        // } else {
+                                            // entity.memory_map[level_name][idx] = UNKNOWN;
+                                        // }
                                     }
                                 }
                             }
@@ -562,7 +566,7 @@ export class RL {
                                     let idx = y0 * level.w + x0;
                                     // if (entity.memory_map[level_name][idx] == NORMAL) break;
                                     // setPixel(x0,y0);
-                                    entity.memory_map[level_name][idx] = level.light_map[idx] > 0 ? NORMAL : UNKNOWN;
+                                    entity.memory_map[level_name][idx] = level.light_map[idx] > 0 ? NORMAL : entity.memory_map[level_name][idx];
                                     if (level.foreground[x0][y0]?.spec.opaque) {
                                         // reaches = false;
                                         break;
@@ -576,7 +580,6 @@ export class RL {
                             }
                         }
                     }
-                    this.do_lighting(level);
                 }
                 // <frame-end-stuff/>
                 this.trigger('tick_end', undefined);
@@ -622,6 +625,7 @@ export class RL {
             window._right = right;
             window._top = top;
             window._bottom = bottom;
+            const COLORS = [0x00_FF_00, 0xFF_00_00, 0x33_33_33, 0x22_22_22, 0x66_66_66]
             for (let x = left; x < right; x++) {
                 for (let y = top; y < bottom; y++) {
                     let anyone_here = level.entities.find(e => e.x == x && e.y == y);
@@ -643,9 +647,10 @@ export class RL {
                         } else {
                             draw = false;
                         }
+                        // /* ! */ ignore_light = true;
                     } else if (map[idx] != UNKNOWN) {
-                        char = '  #.+'[map[idx]];
-                        color = 0x33_33_33;
+                        char = '!!#.+'[map[idx]];
+                        color = COLORS[map[idx]];
                         ignore_light = true;
                     }
                     let maybe_overlay = this.overlays.find(o => o.active && o.level == viewport.current_level && o.x == x && o.y == y);

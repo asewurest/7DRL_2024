@@ -71,15 +71,15 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
             }
         }
     }
-    let canvas = document.createElement('canvas');
-    canvas.width = SIZE_X + 2;
-    canvas.height = SIZE_Y + 2;
-    canvas.style.position = 'fixed';
-    canvas.style.left = '0';
-    canvas.style.top = '0';
-    let ctx = canvas.getContext('2d');
-    ctx.translate(1, 1);
-    ctx.strokeStyle = 'red';
+    // let canvas = document.createElement('canvas');
+    // canvas.width = SIZE_X + 2;
+    // canvas.height = SIZE_Y + 2;
+    // canvas.style.position = 'fixed';
+    // canvas.style.left = '0';
+    // canvas.style.top = '0';
+    // let ctx = canvas.getContext('2d');
+    // ctx.translate(1, 1);
+    // ctx.strokeStyle = 'red';
     
     for (let i = 0; i < finished.length; i++) {
         let room = finished[i];
@@ -118,8 +118,8 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
         }
     }
     
-    document.body.appendChild(canvas);
-    console.log(finished.find(x => x.x1 <= start_x && x.x2 >= start_x && x.y1 <= start_y && x.y2 >= start_y));
+    // document.body.appendChild(canvas);
+    // console.log(finished.find(x => x.x1 <= start_x && x.x2 >= start_x && x.y1 <= start_y && x.y2 >= start_y));
     
     let targets = finished.filter(x => !(x.x1 == 0 || x.y1 == 0));
     let target_room = targets[Math.floor(Math.random() * targets.length)];
@@ -169,21 +169,21 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
         }
     }
     
-    for (let room of finished) {
-        ctx.strokeStyle = room == target_room ? 'yellow' : (room.hidden ? 'blue' : 'red');
-        // console.log(room.x1, room.y1, room.x2 - room.x1, room.y2 - room.y1);
-        ctx.strokeRect(room.x1, room.y1, room.x2 - room.x1, room.y2 - room.y1);
-    }
-    ctx.fillStyle = 'green';
-    for (let room of finished) {
-        for (let adjacent of room.adjacent) {
-            // ctx.strokeStyle = '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16);
-            // console.log(room.x1, room.y1, room.x2 - room.x1, room.y2 - room.y1);
-            for (let door of adjacent.doors) {
-                ctx.fillRect(door.x, door.y, 1, 1);
-            }
-        }
-    }
+    // for (let room of finished) {
+    //     ctx.strokeStyle = room == target_room ? 'yellow' : (room.hidden ? 'blue' : 'red');
+    //     // console.log(room.x1, room.y1, room.x2 - room.x1, room.y2 - room.y1);
+    //     ctx.strokeRect(room.x1, room.y1, room.x2 - room.x1, room.y2 - room.y1);
+    // }
+    // ctx.fillStyle = 'green';
+    // for (let room of finished) {
+    //     for (let adjacent of room.adjacent) {
+    //         // ctx.strokeStyle = '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16);
+    //         // console.log(room.x1, room.y1, room.x2 - room.x1, room.y2 - room.y1);
+    //         for (let door of adjacent.doors) {
+    //             ctx.fillRect(door.x, door.y, 1, 1);
+    //         }
+    //     }
+    // }
     
     let foreground = Array(SIZE_X).fill(0).map(_ => {
         return Array(SIZE_Y).fill(null)

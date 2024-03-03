@@ -48,7 +48,7 @@ image.onload = () => {
       x: 1,
       y: 1,
       description: 'You',
-      light_intensity: 20,
+      light_intensity: 2,
   };
   
   addEventListener('keydown', e => {
