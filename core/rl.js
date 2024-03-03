@@ -537,8 +537,12 @@ export class RL {
                             for (let x = 0; x < level.w; x++) {
                                 for (let y = 0; y < level.h; y++) {
                                     let idx = y * level.w + x;
-                                    if (entity.memory_map[level_name][idx] == NORMAL && level.light_map[idx] > 0) {
-                                        entity.memory_map[level_name][idx] = level.foreground[x][y]?.spec.opaque ? WALL : NOTHING;
+                                    if (entity.memory_map[level_name][idx] == NORMAL) {
+                                        if (level.light_map[idx] > 0) {
+                                            entity.memory_map[level_name][idx] = level.foreground[x][y]?.spec.opaque ? WALL : NOTHING;
+                                        } else {
+                                            entity.memory_map[level_name][idx] = UNKNOWN;
+                                        }
                                     }
                                 }
                             }
@@ -557,7 +561,7 @@ export class RL {
                                     let idx = y0 * level.w + x0;
                                     // if (entity.memory_map[level_name][idx] == NORMAL) break;
                                     // setPixel(x0,y0);
-                                    entity.memory_map[level_name][idx] = NORMAL;
+                                    entity.memory_map[level_name][idx] = level.light_map[idx] > 0 ? NORMAL : UNKNOWN;
                                     if (level.foreground[x0][y0]?.spec.opaque) {
                                         // reaches = false;
                                         break;
@@ -638,8 +642,8 @@ export class RL {
                         } else {
                             draw = false;
                         }
-                    } else if (map[idx] == WALL) {
-                        char = '#';
+                    } else if (map[idx] != UNKNOWN) {
+                        char = map[idx] == WALL ? '#' : '.';
                         color = 0x33_33_33;
                         ignore_light = true;
                     }
