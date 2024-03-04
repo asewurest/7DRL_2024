@@ -1,7 +1,7 @@
 export const SIZE_X = 64;
 export const SIZE_Y = 54;
 
-export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, y: start_y }) {
+export function generate({ Kobold, wall, fake_wall, floors, door: door_mtl, x: start_x, y: start_y }) {
     let rooms = [
         {
             x1: 0,
@@ -191,7 +191,11 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
     let background = Array(SIZE_X).fill(0).map(_ => {
         return Array(SIZE_Y).fill(floors.floor0)
     });
+    let entities = [];
     for (let room of finished) {
+        if (Math.random() > 0.8) {
+            entities.push(new Kobold(room.x1 + 1, room.y1 + 1));
+        }
         for (let i = room.x1; i <= room.x2; i++) {
             foreground[i][room.y1] = wall;
             foreground[i][room.y2] = wall;
@@ -235,5 +239,6 @@ export function generate({ wall, fake_wall, floors, door: door_mtl, x: start_x, 
     return {
         background,
         foreground,
+        entities,
     }
 }

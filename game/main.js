@@ -55,6 +55,26 @@ image.onload = () => {
         base_loudness: 2,
     };
 
+    class Kobold {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.description = 'Kobold';
+            this.character = 'k';
+            this.color = 0xDD_00_00;
+            this.base_light_intensity = 3;
+            this.base_shield = 2;
+            this.base_hearing = 3;
+            this.base_loudness = 2;
+            this.base_strength = 6;
+            this.possible_moves = [{ x: 0, y: 1 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: -1, y: 0 }];
+        }
+
+        get_next_moves() {
+            return Promise.resolve([{ kind: 'move', ...this.possible_moves[Math.floor(Math.random() * this.possible_moves.length)] }]);
+        }
+    }
+
     addEventListener('keydown', e => {
         if (ui_stack.length == 0) {
             if (e.key == 'ArrowUp') {
@@ -138,13 +158,13 @@ image.onload = () => {
         description: 'how?',
     });
     rl.on('load_level', () => {
-        let { background, foreground } = generate({ fake_wall, wall, floors: { floor_unreachable, floor0, floor1, floor2, floor_source, floor_target, floor_hidden }, door, x: 1, y: 1 });
+        let { background, foreground, entities } = generate({ Kobold, fake_wall, wall, floors: { floor_unreachable, floor0, floor1, floor2, floor_source, floor_target, floor_hidden }, door, x: 1, y: 1 });
         return {
             background,
             foreground,
             w: SIZE_X,
             h: SIZE_Y,
-            entities: [player],
+            entities: [player, ...entities],
             light_sources: [player],
         }
     });

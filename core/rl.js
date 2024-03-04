@@ -392,6 +392,9 @@ export class RL {
     }
     
     post_process_level(level) {
+        if (!level.light_sources) {
+            level.light_sources = [];
+        }
         level.entities.forEach(x => {
             x.planned_movement = { x: 0, y: 0 };
             x.memory_map = {};
@@ -401,10 +404,10 @@ export class RL {
             x.sounds = [];
             x.sounds_heard = [];
             this.update_stats(x);
+            if (x.base_light_intensity && !level.light_sources.includes(x)) {
+                level.light_sources.push(x);
+            }
         });
-        if (!level.light_sources) {
-            level.light_sources = [];
-        }
         for (let property of ['foreground', 'background']) {
             let array = level[property];
             function tile(x, y) {
