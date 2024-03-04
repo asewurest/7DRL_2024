@@ -48,7 +48,11 @@ image.onload = () => {
         x: 1,
         y: 1,
         description: 'You',
-        light_intensity: 2,
+        base_light_intensity: 2,
+        base_strength: 10,
+        base_shield: 5,
+        base_hearing: 8,
+        base_loudness: 2,
     };
 
     addEventListener('keydown', e => {
@@ -148,7 +152,33 @@ image.onload = () => {
     window.rl = rl;
     window.RLFont = RLFont;
     window.font = font;
-    rl.on('tick_end', () => { });
+    let inventory = rl.text_box(0, 8, SIDEBAR_WIDTH, 4, 'Wielding:\nFists\n', 0x88_88_88);
+    let inventory_actions = rl.action_panel(0, 12, SIDEBAR_WIDTH, 10);
+    let stats = rl.text_box(0, 22, SIDEBAR_WIDTH, 8, ' ', 0x99_99_99);
+    rl.on('tick_end', () => {
+        inventory.text = 'Wielding:\n';
+        if (player.wielding) {
+            inventory.text += player.wielding.description + '\n';
+        } else {
+            inventory.text += `Fists\n`;
+        }
+        if (player.inventory.length > 0) inventory.text += ' \nInventory:';
+        inventory_actions.actions = {};
+        inventory_actions.order = [];
+        for (let i = 0; i < player.inventory.length; i++) {
+            inventory_actions.add_action(`inv${i}`, player.inventory[i].description, i.toString(), console.warn);
+        }
+        stats.text = 
+`
+STRENGTH: ${player.strength}
+(${player.base_strength} + ${player.strength_bonus})
+SHIELD  : ${player.shield}
+(${player.base_shield} + ${player.shield_bonus})
+HEARING : ${player.hearing}
+(${player.base_hearing} + ${player.hearing_bonus})
+LOUDNESS: ${player.loudness}
+(${player.base_loudness} + ${player.loudness_bonus})`.trim();
+    });
 
     let main_actions = rl.action_panel(0, 0, 10, 8);
     main_actions.add_action('interact', 'interact', 'i', () => { });

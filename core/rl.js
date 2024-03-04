@@ -377,11 +377,28 @@ export class RL {
     start_entity_move_requests() {
         this.entity_moves = pollable(Promise.all(this.level_order.map(x => Promise.all(this.levels[x].entities.map(x => x.get_next_moves())))));
     }
+
+    update_stats(entity) {
+        for (let property of ['light_intensity', 'strength', 'shield', 'hearing', 'loudness']) {
+            let bonus = 0;
+            // if (x.wielding) {}
+            entity[property + '_bonus'] = bonus;
+            entity[property] = entity['base_' + property] + bonus;
+        }
+        // entity.light_intensity = entity.base_light_intensity;
+        // entity.strength = entity.base_strength;
+        // entity.shield = entity.base_shield;
+        // entity.light_intensity_bonus = 
+    }
     
     post_process_level(level) {
         level.entities.forEach(x => {
             x.planned_movement = { x: 0, y: 0 };
             x.memory_map = {};
+            x.inventory = x.inventory || [];
+            x.wielding = x.wielding || null;
+            x.wearing = x.wearing || null;
+            this.update_stats(x);
         });
         if (!level.light_sources) {
             level.light_sources = [];
@@ -476,6 +493,9 @@ export class RL {
     }
 
     update() {
+        this.ctx.globalAlpha = 1;
+        this.ctx.fillStyle = canvas_color(this.background);
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         for (let viewport of this.viewports) {
             if (!this.levels[viewport.current_level]) {
                 let response = this.trigger('load_level', viewport.current_level);
