@@ -26,7 +26,7 @@ let image = new Image();
 image.src = './core/font.png';
 image.onload = () => {
     let char_data = {};
-    let chars = ' 0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!(),:/┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥▒@↑↓←→┄┈┆┊?+';
+    let chars = ' 0123456789.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!(),:/┌┐└┘│|─┤├┼┬┴╔╗╚╝║═╣╠╬╦╩#╴╶╵╷╡╞╨╥▒@↑↓←→┄┈┆┊?+*-';
     for (let i = 0; i < chars.length; i++) {
         char_data[chars[i]] = { x: 10 * (i % 16), y: 10 * Math.floor(i / 16) };
     }
@@ -51,7 +51,7 @@ image.onload = () => {
         base_light_intensity: 2,
         base_strength: 10,
         base_shield: 5,
-        base_hearing: 8,
+        base_hearing: 4,
         base_loudness: 2,
     };
 
@@ -155,7 +155,19 @@ image.onload = () => {
     let inventory = rl.text_box(0, 8, SIDEBAR_WIDTH, 4, 'Wielding:\nFists\n', 0x88_88_88);
     let inventory_actions = rl.action_panel(0, 12, SIDEBAR_WIDTH, 10);
     let stats = rl.text_box(0, 22, SIDEBAR_WIDTH, 8, ' ', 0x99_99_99);
+    let lines = [];
+    function line__(message) { lines.unshift(message) }
+    rl.log('                        -*- READ THIS BEFORE MOVING -*-', 0xDD_00_00);
+    rl.log('Welcome, Priest of Yendor! An adventurer has managed to traverse the dungeons');
+    rl.log('downward and steal the Amulet of Yendor! You have been tasked by the gods to');
+    rl.log('kill that heretic and return the Amulet back to its rightful place. To help you');
+    rl.log('in this, you have been granted a scroll of enchantment, which when used upon a');
+    line__('weapon, will render it for the time of a blow the most destructive object in the');
+    line__('world, if used against the bearer of the Amulet.');
     rl.on('tick_end', () => {
+        if (lines.length > 0) {
+            rl.log(lines.pop());
+        }
         inventory.text = 'Wielding:\n';
         if (player.wielding) {
             inventory.text += player.wielding.description + '\n';
@@ -223,6 +235,4 @@ LOUDNESS: ${player.loudness}
     vp.target_y = SIZE_Y / 2;
     vp.fov_entity = player;
     window.player = player;
-
-    rl.log('hi');
 }

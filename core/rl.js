@@ -398,6 +398,8 @@ export class RL {
             x.inventory = x.inventory || [];
             x.wielding = x.wielding || null;
             x.wearing = x.wearing || null;
+            x.sounds = [];
+            x.sounds_heard = [];
             this.update_stats(x);
         });
         if (!level.light_sources) {
@@ -492,6 +494,23 @@ export class RL {
         return this.level_order.map(x => [x, this.levels[x]]).find(([_, { entities }]) => entities.includes(entity))[0];
     }
 
+    emit_sound(x, y, level, volume, description) {
+        if (typeof level !== 'object') {
+            level = this.levels[level];
+        }
+        level.entities.forEach(entity => {
+            let vol = volume / Math.sqrt((x - entity.x) ** 2 + (y - entity.y) ** 2) * (entity.hearing || 0);
+            if (vol > 1) {
+                entity.sounds.push({
+                    x,
+                    y,
+                    volume: vol,
+                    description,
+                });
+            }
+        });
+    }
+
     update() {
         this.ctx.globalAlpha = 1;
         this.ctx.fillStyle = canvas_color(this.background);
@@ -537,6 +556,9 @@ export class RL {
                             if (move.kind == 'move') {
                                 entity.planned_movement.x += move.x;
                                 entity.planned_movement.y += move.y;
+                                if (Math.random() > 0.5) {
+                                    this.emit_sound(entity.x, entity.y, this.level_order[i], entity.loudness, 'walking');
+                                }
                             }
                         }
                     }
@@ -604,6 +626,9 @@ export class RL {
                                 /* end of adapted line algorithm */
                             }
                         }
+                        this.update_stats(entity);
+                        entity.sounds_heard = entity.sounds;
+                        entity.sounds = [];
                     }
                 }
                 // <frame-end-stuff/>
@@ -654,6 +679,7 @@ export class RL {
             for (let x = left; x < right; x++) {
                 for (let y = top; y < bottom; y++) {
                     let anyone_here = level.entities.find(e => e.x == x && e.y == y);
+                    let any_sound_here = viewport.fov_entity && viewport.fov_entity.sounds_heard.find(s => s.x == x && s.y == y);
                     let char;
                     let color = this.background;
                     let draw = true;
@@ -663,6 +689,10 @@ export class RL {
                         if (anyone_here) {
                             char  = anyone_here.character;
                             color = anyone_here.color;
+                        } else if (any_sound_here) {
+                            char = '*';
+                            color = 0xFF_00_00 + ((255 - Math.max(Math.min(255, Math.round((any_sound_here.volume - 1) / 6 * 255)), 0)) << 8);
+                            ignore_light = true;
                         } else if (level.foreground[x][y]) {
                             char  = level.foreground[x][y].character;
                             color = level.foreground[x][y].spec.color;
@@ -673,6 +703,10 @@ export class RL {
                             draw = false;
                         }
                         // /* ! */ ignore_light = true;
+                    } else if (any_sound_here) {
+                        char = '*';
+                        color = 0xFF_00_00 + ((255 - Math.max(Math.min(255, Math.round((any_sound_here.volume - 1) / 6 * 255)), 0)) << 8);
+                        ignore_light = true;
                     } else if (map[idx] != UNKNOWN) {
                         char = '!!#.+'[map[idx]];
                         color = COLORS[map[idx]];
