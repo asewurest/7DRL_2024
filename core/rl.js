@@ -403,6 +403,7 @@ export class RL {
             x.wearing = x.wearing || null;
             x.sounds = [];
             x.sounds_heard = [];
+            x.current_level = level;
             this.update_stats(x);
             if (x.base_light_intensity && !level.light_sources.includes(x)) {
                 level.light_sources.push(x);
@@ -497,7 +498,7 @@ export class RL {
         return this.level_order.map(x => [x, this.levels[x]]).find(([_, { entities }]) => entities.includes(entity))[0];
     }
 
-    emit_sound(x, y, level, volume, description) {
+    emit_sound(x, y, level, volume, description, source) {
         if (typeof level !== 'object') {
             level = this.levels[level];
         }
@@ -509,6 +510,7 @@ export class RL {
                     y,
                     volume: vol,
                     description,
+                    source,
                 });
             }
         });
@@ -536,6 +538,7 @@ export class RL {
                 }
                 this.levels[viewport.current_level].entities = this.levels[viewport.current_level].entities || [];
                 this.level_order.push(viewport.current_level);
+                this.levels[viewport.current_level].name = viewport.current_level;
                 this.post_process_level(this.levels[viewport.current_level]);
             }
         }
@@ -560,7 +563,7 @@ export class RL {
                                 entity.planned_movement.x += move.x;
                                 entity.planned_movement.y += move.y;
                                 if (Math.random() > 0.5) {
-                                    this.emit_sound(entity.x, entity.y, this.level_order[i], entity.loudness, 'walking');
+                                    this.emit_sound(entity.x, entity.y, this.level_order[i], entity.loudness, 'walking', entity);
                                 }
                             }
                         }
@@ -632,6 +635,7 @@ export class RL {
                         this.update_stats(entity);
                         entity.sounds_heard = entity.sounds;
                         entity.sounds = [];
+                        entity.current_level = level;
                     }
                 }
                 // <frame-end-stuff/>

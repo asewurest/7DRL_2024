@@ -1,5 +1,6 @@
 import { RL, RLFont } from '../core/rl.js';
 import { SIZE_X, SIZE_Y, generate } from './generation.js';
+import { find_path } from './pathfinding.js';
 
 const canvas = document.getElementById('roguelike');
 canvas.width = 10 * 80;
@@ -55,6 +56,8 @@ image.onload = () => {
         base_loudness: 2,
     };
 
+    let qobold;
+
     class Kobold {
         constructor(x, y) {
             this.x = x;
@@ -68,10 +71,36 @@ image.onload = () => {
             this.base_loudness = 2;
             this.base_strength = 6;
             this.possible_moves = [{ x: 0, y: 1 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: -1, y: 0 }];
+            qobold = this;
         }
 
         get_next_moves() {
-            return Promise.resolve([{ kind: 'move', ...this.possible_moves[Math.floor(Math.random() * this.possible_moves.length)] }]);
+            let maybe_sound;
+            for (let sound of this.sounds_heard) {
+                if (sound.source != this) { // we'll avoid running after ourselves, shall we?
+                    if (!maybe_sound || sound.volume > maybe_sound.volume) {
+                        maybe_sound = sound;
+                    }
+                }
+            }
+            if (maybe_sound) {
+                this.interest_target_x = maybe_sound.x;
+                this.interest_target_y = maybe_sound.y;
+            }
+            if (typeof this.interest_target_x == 'undefined') {
+                return Promise.resolve([{ kind: 'move', ...this.possible_moves[Math.floor(Math.random() * this.possible_moves.length)] }]);
+            }
+            let path = find_path(this, this.interest_target_x, this.interest_target_y);
+            if (path.length >= 2) {
+                // console.log(path[1].x - this.x, path[1].y - this.y, this.x, path[1].x);
+                this.last_move = { kind: 'move', x: path[1].x - this.x, y: path[1].y - this.y};
+                return Promise.resolve([this.last_move]);
+            } else {
+                // hopefully we will be able to go through doors like this :)
+                if (this.last_move) return Promise.resolve([this.last_move]);
+                // console.log(path, this.x, this.y);
+            }
+            return Promise.resolve([]);
         }
     }
 
@@ -185,6 +214,7 @@ image.onload = () => {
     line__('weapon, will render it for the time of a blow the most destructive object in the');
     line__('world, if used against the bearer of the Amulet.');
     rl.on('tick_end', () => {
+        qobold.smart = true;
         if (lines.length > 0) {
             rl.log(lines.pop());
         }
@@ -214,6 +244,9 @@ LOUDNESS: ${player.loudness}
 
     let main_actions = rl.action_panel(0, 0, 10, 8);
     main_actions.add_action('interact', 'interact', 'i', () => { });
+    main_actions.add_action('pov', 'change POV', 'c', () => {
+        vp.fov_entity = vp.fov_entity == qobold ? player : qobold;
+    });
     main_actions.add_action('look', 'look', 'l', () => {
         let overlay = rl.overlay(player.x, player.y, rl.level_of(player));
         let text_box = rl.text_box(0, 8, SIDEBAR_WIDTH, 4, 'Looking at\nYou', 0x88_88_88);
