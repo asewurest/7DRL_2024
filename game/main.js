@@ -87,6 +87,7 @@ image.onload = () => {
                 this.interest_target_x = maybe_sound.x;
                 this.interest_target_y = maybe_sound.y;
             }
+            this.interest_target_x = this.interest_target_y = 1;
             if (typeof this.interest_target_x == 'undefined') {
                 return Promise.resolve([{ kind: 'move', ...this.possible_moves[Math.floor(Math.random() * this.possible_moves.length)] }]);
             }
@@ -97,6 +98,7 @@ image.onload = () => {
                 return Promise.resolve([this.last_move]);
             } else {
                 // hopefully we will be able to go through doors like this :)
+                console.log('door?', path);
                 if (this.last_move) return Promise.resolve([this.last_move]);
                 // console.log(path, this.x, this.y);
             }

@@ -1,4 +1,68 @@
+import { pollable } from "../core/rl.js";
+
+let promise;
+let wasm_memory = new WebAssembly.Memory({
+    initial: 2,
+});
+const PATH_LOCATION = 96784;
+let wasm_loaded_level = NaN;
+
 export function find_path(self, target_x, target_y, rec = 0) {
+    if (!self.current_level) {
+        console.warn('entity', self, 'seems to be in the Great Nowhere');
+        return [];
+    }
+    let key = self.current_level.name;
+    let memory = self.memory_map[key];
+    if (!memory) {
+        console.warn('no memory :(');
+        return [];
+    }
+    if (!promise) {
+        promise = pollable(WebAssembly.instantiateStreaming(fetch('game/pathfinding.wasm'), {
+            'memory': {
+                'mem': wasm_memory,
+            }
+        }));
+        console.log(promise);
+    }
+    if (promise.resolved) {
+        if (!promise._wasm_ready_message) {
+            console.log('WASM ready!');
+            promise._wasm_ready_message = true;
+        }
+        let wi = promise.output;
+        if (wasm_loaded_level != key) {
+            let into = new Uint8Array(wasm_memory.buffer, 0, 3456);
+            for (let x = 0; x < 64; x++) {
+                for (let y = 0; y < 54; y++) {
+                    let index = y * 64 + x;
+                    into[index] = self.current_level.foreground[x][y]?.spec.tangible ? 1 : 0;
+                }
+            }
+            wasm_loaded_level = key;
+        }
+        let into = new Uint8Array(wasm_memory.buffer, 3456, 3456);
+        for (let i = 0; i < 3456; i++) {
+            into[i] = memory[i];
+        }
+        wi.instance.exports.find_path(self.x, self.y, target_x, target_y, PATH_LOCATION);
+        let reader = new Uint32Array(wasm_memory.buffer, PATH_LOCATION, 8571 /* probably overkill but we have 2 64KiB pages, let's use them */);
+        let length = reader[0];
+        let response = [];
+        function add(v) {
+            let x = v % 64;
+            let y = Math.floor(v / 64);
+            response.push({ x, y });
+        }
+        console.log(reader);
+        if (length == 0) return [];
+        add(reader[length]);
+        if (length == 1) return response;
+        add(reader[length - 1]);
+        console.log(response);
+        return response;
+    }
     const UNKNOWN = 0;
     const NORMAL = 1;
     const WALL = 2;
@@ -9,21 +73,11 @@ export function find_path(self, target_x, target_y, rec = 0) {
         return Math.abs(node.x - x2) + Math.abs(node.y - y2);
     }
 
-    if (!self.current_level) {
-        console.warn('entity', self, 'seems to be in the Great Nowhere');
-        return [];
-    }
     self.pathfinding_data = self.pathfinding_data || {
         maps: {},
     };
     self.pathfinding_data.target_x = target_x;
     self.pathfinding_data.target_y = target_y;
-    let key = self.current_level.name;
-    let memory = self.memory_map[key];
-    if (!memory) {
-        console.warn('no memory :(');
-        return [];
-    }
     let level = self.current_level;
 
     let map;

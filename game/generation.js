@@ -192,8 +192,9 @@ export function generate({ Kobold, wall, fake_wall, floors, door: door_mtl, x: s
         return Array(SIZE_Y).fill(floors.floor0)
     });
     let entities = [];
+    let kobolds = 0;
     for (let room of finished) {
-        if (Math.random() > 0.8 && !room.unreachable) {
+        if (Math.random() > 0.8 && !room.unreachable && kobolds++ == 0) {
             entities.push(new Kobold(room.x1 + 1, room.y1 + 1));
         }
         for (let i = room.x1; i <= room.x2; i++) {

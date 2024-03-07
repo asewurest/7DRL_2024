@@ -798,7 +798,7 @@ export class RL {
     }
 }
 
-function pollable(x) {
+export function pollable(x) {
     if (!x.pollable) {
         x.pollable = true;
         x.then(v => {

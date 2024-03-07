@@ -1,5 +1,5 @@
 (module
-(import "memory" "mem" (memory 1))
+(import "memory" "mem" (memory 2))
 
 (func $abs (param $x i32) (result i32) (local $mask i32)
     local.get $x
@@ -378,6 +378,11 @@
                         local.get $this_fscore
                         i32.store
 
+                        ;; set parent
+                        local.get $best_addr
+                        local.get $current_addr
+                        i32.store
+
                         local.get $best_addr
                         i32.const 8
                         i32.add
@@ -454,6 +459,11 @@
                         i32.const 4
                         i32.add
                         local.get $this_fscore
+                        i32.store
+
+                        ;; set parent
+                        local.get $best_addr
+                        local.get $current_addr
                         i32.store
 
                         local.get $best_addr
@@ -534,6 +544,11 @@
                         local.get $this_fscore
                         i32.store
 
+                        ;; set parent
+                        local.get $best_addr
+                        local.get $current_addr
+                        i32.store
+
                         local.get $best_addr
                         i32.const 8
                         i32.add
@@ -610,6 +625,11 @@
                         i32.const 4
                         i32.add
                         local.get $this_fscore
+                        i32.store
+
+                        ;; set parent
+                        local.get $best_addr
+                        local.get $current_addr
                         i32.store
 
                         local.get $best_addr
