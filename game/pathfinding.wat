@@ -190,7 +190,8 @@
     i32.div_u
 )
 
-(func $find_path (param $x i32) (param $y i32) (param $tx i32) (param $ty i32) (param $path_loc i32) (local $current_addr i32) (local $cursor i32) (local $best i32) (local $best_addr i32) (local $this_fscore i32) (local $openset_pos i32)
+;; call $init before this
+(func $find_path_impl (param $x i32) (param $y i32) (param $tx i32) (param $ty i32) (param $path_loc i32) (result i32) (local $current_addr i32) (local $cursor i32) (local $best i32) (local $best_addr i32) (local $this_fscore i32) (local $openset_pos i32)
     ;; so...
     ;; terrain is 64x54 (3456)
     ;; memory @ 0     -> solidity map (1 byte each)
@@ -205,8 +206,6 @@
     ;; OPEN SET SPECIAL VALUES
     ;; 0 => end
     ;; 1 => skip
-
-    call $init
 
     local.get $y
     i32.const 64
@@ -313,6 +312,7 @@
                         local.get $path_loc
                         local.get $current_addr
                         call $backtrack
+                        i32.const 1
                         return
                     )
                 )
@@ -635,9 +635,200 @@
         i32.load
         br_if $loop
     )
-    ;; oh well
 
+    ;; oh well
+    i32.const 0
+    return
+)
+
+(func $find_path (param $x i32) (param $y i32) (param $tx i32) (param $ty i32) (param $path_loc i32) (local $closest_dist i32) (local $counter i32) (local $val i32) (local $sx i32) (local $sy i32)
     call $init
+    local.get $x
+    local.get $y
+    local.get $tx
+    local.get $ty
+    local.get $path_loc
+    call $find_path_impl
+    i32.eqz
+    (if
+        (then
+            call $init
+            local.get $x
+            local.get $y
+            i32.const 3455
+            local.set $counter
+            i32.const 4294967295
+            local.set $closest_dist
+            (loop $scan
+                (; stack depth after this operation ;)
+                (; 1 ;)local.get $counter
+                (; 2 ;)i32.const 3456
+                (; 1 ;)i32.add
+                (; 1 ;)i32.load8_u
+                (; 1 ;)local.tee $val
+                (; 2 ;)i32.const 1
+                (; 1 ;)i32.eq ;; NORMAL
+                (; 2 ;)local.get $val
+                (; 3 ;)i32.const 3
+                (; 2 ;)i32.eq ;; NOTHING
+                (; 3 ;)local.get $val
+                (; 4 ;)i32.const 4
+                (; 3 ;)i32.eq ;; DOORLIKE
+                (; 2 ;)i32.or ;; NOTHING | DOORLIKE
+                (; 1 ;)i32.or ;; NOTHING | DOORLIKE | NORMAL
+                (; 2 ;)local.get $counter
+                (; 2 ;)i32.load8_u
+                (; 2 ;)i32.eqz
+                (; 1 ;)i32.and ;; can_be_walked_through & (NOTHING | DOORLIKE | NORMAL)
+                (; 2 ;)local.get $counter
+                (; 3 ;)call $extract_xy
+                (; 2 ;)local.set $sy
+                (; 1 ;)local.set $sx
+                (; normally that 1 should be 0 or 1 ;)
+
+                ;; neighbor: UP
+                (; 2 ;)i32.const 0
+                (; 1 ;)local.set $val ;; val here -> is this neighbor unknown?
+                (; 2 ;)local.get $sy
+                (; 3 ;)i32.const 0
+                (; 2 ;)i32.ne
+                (; 1 ;)(if
+                    (then
+                        local.get $sx
+                        local.get $sy
+                        i32.const 1
+                        i32.sub
+                        i32.const 64
+                        i32.mul
+                        i32.add
+                        i32.const 3456
+                        i32.add
+                        i32.load8_u
+                        i32.eqz ;; == UNKNOWN?
+                        local.set $val
+                    )
+                )
+                (; 2 ;)local.get $val
+
+                ;; neighbor: LEFT
+                (; 3 ;)i32.const 0
+                (; 2 ;)local.set $val ;; val here -> is this neighbor unknown?
+                (; 3 ;)local.get $sx
+                (; 4 ;)i32.const 0
+                (; 3 ;)i32.ne
+                (; 2 ;)(if
+                    (then
+                        local.get $sx
+                        i32.const 1
+                        i32.sub
+                        local.get $sy
+                        i32.const 64
+                        i32.mul
+                        i32.add
+                        i32.const 3456
+                        i32.add
+                        i32.load8_u
+                        i32.eqz ;; == UNKNOWN?
+                        local.set $val
+                    )
+                )
+                (; 3 ;)local.get $val
+
+                ;; neighbor: DOWN
+                (; 4 ;)i32.const 0
+                (; 3 ;)local.set $val ;; val here -> is this neighbor unknown?
+                (; 4 ;)local.get $sy
+                (; 5 ;)i32.const 53
+                (; 4 ;)i32.ne
+                (; 3 ;)(if
+                    (then
+                        local.get $sx
+                        local.get $sy
+                        i32.const 1
+                        i32.add
+                        i32.const 64
+                        i32.mul
+                        i32.add
+                        i32.const 3456
+                        i32.add
+                        i32.load8_u
+                        i32.eqz ;; == UNKNOWN?
+                        local.set $val
+                    )
+                )
+                (; 4 ;)local.get $val
+
+                ;; neighbor: RIGHT
+                (; 5 ;)i32.const 0
+                (; 4 ;)local.set $val ;; val here -> is this neighbor unknown?
+                (; 5 ;)local.get $sx
+                (; 6 ;)i32.const 63
+                (; 5 ;)i32.ne
+                (; 4 ;)(if
+                    (then
+                        local.get $sx
+                        i32.const 1
+                        i32.add
+                        local.get $sy
+                        i32.const 64
+                        i32.mul
+                        i32.add
+                        i32.const 3456
+                        i32.add
+                        i32.load8_u
+                        i32.eqz ;; == UNKNOWN?
+                        local.set $val
+                    )
+                )
+                (; 5 ;)local.get $val
+
+                (; 4 ;)i32.or ;; down | right
+                (; 3 ;)i32.or ;; down | right | left
+                (; 2 ;)i32.or ;; down | right | left | up
+                (; 1 ;)i32.and ;; (down | right | left | up) & can_be_walked_through & (NOTHING | DOORLIKE | NORMAL)
+
+                (; 2 ;)local.get $x
+                (; 3 ;)local.get $y
+                (; 4 ;)local.get $sx
+                (; 5 ;)local.get $sy
+                (; 2 ;)call $manhattan
+                (; 2 ;)local.tee $val
+                (; 3 ;)local.get $closest_dist
+                (; 2 ;)i32.le_u
+                (; 1 ;)i32.and ;; closer & aforementioned conditions
+                (; 0 ;)(if
+                    (then
+                        local.get $val
+                        local.set $closest_dist
+                        local.get $sx
+                        local.set $tx
+                        local.get $sy
+                        local.set $ty
+                    )
+                )
+
+                ;; increment counter
+                (; 1 ;)local.get $counter
+                (; 2 ;)i32.const 1
+                (; 1 ;)i32.sub
+                (; 1 ;)local.tee $counter
+                (; 0 ;)br_if $scan
+            )
+            local.get $tx
+            local.get $ty
+            local.get $path_loc
+            call $find_path_impl
+            i32.eqz
+            (if
+                (then
+                    ;; failure; return []
+                    local.get $path_loc
+                    i32.const 0
+                    i32.store
+                )
+            )
+        )
+    )
 )
 
 (export "find_path" (func $find_path))
