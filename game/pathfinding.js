@@ -135,8 +135,8 @@ export function find_path(self, target_x, target_y, rec = 0) {
             for (let neighbor of current.neighbors) {
                 let index = neighbor.y * level.w + neighbor.x;
                 let blocks = memory[index] == WALL || memory[index] == UNKNOWN || (memory[index] == NORMAL && level.foreground[neighbor.x][neighbor.y]?.spec.tangible);
-            if (blocks) continue;
-            let new_g = current.g + (blocks ? 1 : 20_000);
+                if (blocks) continue;
+                let new_g = current.g + (blocks ? 1 : 20_000);
                 if (new_g < neighbor.g) {
                     neighbor.parent = current;
                     neighbor.g = new_g;
